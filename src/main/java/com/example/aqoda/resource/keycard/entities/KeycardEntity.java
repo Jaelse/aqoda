@@ -9,30 +9,29 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.util.UUID;
 
 @Data
-@Setter
 @Getter
+@Setter
 @Builder
-@Table("keychain")
+@Table("keycard")
 public class KeycardEntity implements Persistable<UUID> {
 
     @Id
-    @Column("keychain_no")
-    private final UUID keychainNo;
+    @Column("keycard_no")
+    private final UUID keycardNo;
 
-    @NonNull
     @Column("room_no")
-    private final Long roomNo;
+    private Long roomNo;
 
     @Column("guest_id")
-    private final UUID guestId;
+    private UUID guestId;
 
     @Override
     public UUID getId() {
-        return keychainNo;
+        return keycardNo;
     }
 
     @Override
     public boolean isNew() {
-        return keychainNo == null;
+        return keycardNo == null;
     }
 }

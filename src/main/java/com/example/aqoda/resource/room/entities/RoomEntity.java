@@ -8,6 +8,8 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.util.UUID;
+
 @Data
 @Setter
 @Getter
@@ -23,6 +25,10 @@ public class RoomEntity implements Persistable<Long> {
     @NonNull
     @Column("hotel_id")
     private Long hotelId;
+
+    @NonNull
+    @Column("keycard_no")
+    private UUID keycardNo;
 
     @Override
     public Long getId() {

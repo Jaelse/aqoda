@@ -29,7 +29,7 @@ public class GuestEntity {
     @Column("room_no")
     private Long roomNo;
 
-    @Column("keychain_no")
-    private UUID keychainNo;
+    @Column("keycard_no")
+    private UUID keycardNo;
 
 }
