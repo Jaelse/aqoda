@@ -66,4 +66,27 @@ public class GuestServiceImpl implements GuestService {
                         .build()
                 );
     }
+
+    @Override
+    public Flux<ImmutableGuest> guestsGreaterThanAge(Integer age) {
+        return guestRepository.findGuestEntityByAgeAfter(age)
+                .map(guest -> ImmutableGuest.builder()
+                        .id(guest.getId())
+                        .name(guest.getName())
+                        .age(guest.getAge())
+                        .build()
+                );
+
+    }
+
+    @Override
+    public Flux<ImmutableGuest> guestsLessThanAge(Integer age) {
+        return guestRepository.findGuestEntityByAgeBefore(age)
+                .map(guest -> ImmutableGuest.builder()
+                        .id(guest.getId())
+                        .name(guest.getName())
+                        .age(guest.getAge())
+                        .build()
+                );
+    }
 }

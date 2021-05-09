@@ -67,4 +67,15 @@ public class BookingServiceImpl implements BookingService {
                         .build()
                 );
     }
+
+    @Override
+    public Flux<ImmutableBooking> findAll() {
+        return bookingRepository.findAll()
+                .map(booking -> ImmutableBooking.builder()
+                        .bookingId(booking.getBookingId())
+                        .roomNo(booking.getRoomNo())
+                        .guestId(booking.getGuestId())
+                        .build()
+                );
+    }
 }

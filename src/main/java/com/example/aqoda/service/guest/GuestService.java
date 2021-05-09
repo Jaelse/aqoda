@@ -16,4 +16,8 @@ public interface GuestService {
     Flux<ImmutableGuest> findAll();
 
     Mono<ImmutableGuest> findByName(String name);
+
+    Flux<ImmutableGuest> guestsGreaterThanAge(Integer age);
+
+    Flux<ImmutableGuest> guestsLessThanAge(Integer age);
 }

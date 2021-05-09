@@ -16,4 +16,6 @@ public interface BookingService {
     Mono<ImmutableBooking> findByRoomNo(Long roomNo);
 
     Flux<ImmutableBooking> findByGuestId(UUID guestId);
+
+    Flux<ImmutableBooking> findAll();
 }

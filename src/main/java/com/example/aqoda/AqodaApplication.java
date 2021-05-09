@@ -11,6 +11,7 @@ import com.example.aqoda.service.guest.GuestService;
 import com.example.aqoda.service.hotel.HotelService;
 import com.example.aqoda.service.keycard.KeycardService;
 import com.example.aqoda.service.room.RoomService;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 public class AqodaApplication {
@@ -175,12 +177,129 @@ public class AqodaApplication {
                                     .block();
 
                         }
+                        break;
                     case list_guest:
-                    case book_by_floor:
+                        List<String> names = bookingService.findAll()
+                                .flatMap(booking -> guestService.findById(booking.guestId()))
+                                .collect(Collectors.toList())
+                                .map(immutableGuests -> immutableGuests.stream()
+                                        .map(guest -> guest.name())
+                                        .collect(Collectors.toList())
+                                )
+                                .block();
+
+                        log.info("{}", names);
+                        break;
                     case get_guest_in_room:
+                        if (command.getParams().size() == 1) {
+                            Long roomNo = Long.valueOf(command.getParams().get(0));
+                            String name = bookingService.findByRoomNo(roomNo)
+                                    .map(booking -> guestService.findById(booking.guestId()))
+                                    .map(Function.identity())
+                                    .flatMap(x -> x)
+                                    .block()
+                                    .name();
+
+                            log.info("{}", name);
+                        }
                     case list_guest_by_age:
+                        if (command.getParams().size() == 2) {
+                            String operator = command.getParams().get(0);
+                            Integer age = Integer.valueOf(command.getParams().get(1));
+
+                            if (operator == ">") {
+                                List<String> n = guestService.guestsGreaterThanAge(age)
+                                        .map(guest -> guest.name())
+                                        .collectList()
+                                        .block();
+
+                                log.info("{}", n);
+                            } else if (operator == "<") {
+                                List<String> n = guestService.guestsLessThanAge(age)
+                                        .map(guest -> guest.name())
+                                        .collectList()
+                                        .block();
+
+                                log.info("{}", n);
+                            }
+                        }
+                        break;
                     case list_guest_by_floor:
+                        if (command.getParams().size() == 1) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            List<String> n = bookingService.findAll()
+                                    .filter(booking -> booking.roomNo() / 100 == floor)
+                                    .map(booking -> guestService.findById(booking.guestId())
+                                    )
+                                    .flatMap(Function.identity())
+                                    .map(immutableGuest -> immutableGuest.name())
+                                    .collectList()
+                                    .block();
+
+                            log.info("{}", n);
+                        }
+                        break;
+                    case book_by_floor:
+                        if (command.getParams().size() == 3) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            String name = command.getParams().get(1);
+                            Integer age = Integer.valueOf(command.getParams().get(2));
+
+                            Boolean canBook = true;
+
+                            List<ImmutableBooking> bookings = roomService.findAll()
+                                    .filter(room -> room.roomNo() / 100 == floor)
+                                    .filter(room -> bookingService.findByRoomNo(room.roomNo()).map(r -> false).switchIfEmpty(Mono.just(true)).block())
+                                    .map(room -> guestService.findByName(name)
+                                            .flatMap(guest -> bookingService.book(BookingEntity.builder()
+                                                            .roomNo(room.roomNo())
+                                                            .guestId(guest.id())
+                                                            .build()
+                                                    )
+                                            )
+                                            .switchIfEmpty(guestService.create(GuestEntity.builder()
+                                                    .name(name)
+                                                    .age(age)
+                                                    .build())
+                                                    .flatMap(immutableGuest -> bookingService.book(BookingEntity.builder()
+                                                            .roomNo(room.roomNo())
+                                                            .guestId(immutableGuest.id())
+                                                            .build())
+                                                    )
+                                            )
+                                    )
+                                    .map(Mono::block)
+                                    .collectList()
+                                    .map(ArrayList::new)
+                                    .block();
+
+                            List<Long> rooms = bookings.stream()
+                                    .map(booking -> booking.roomNo())
+                                    .collect(Collectors.toList());
+
+                            List<Long> keycards = bookings.stream()
+                                    .map(booking -> keycardService.findByRoomNo(booking.roomNo()))
+                                    .map(immutableKeycardMono -> immutableKeycardMono.block())
+                                    .map(keycard -> keycard.keycardNo())
+                                    .collect(Collectors.toList());
+
+
+                            log.info("{} are booked with keycard number {}.", rooms, keycards);
+                        }
+                        break;
                     case checkout_guest_by_floor:
+                        if (command.getParams().size() == 1) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            List<Long> bookings = bookingService.findAll()
+                                    .filter(booking -> booking.roomNo() / 100 == floor)
+                                    .map(booking -> bookingService.checkout(booking.guestId(), booking.roomNo()))
+                                    .flatMap(Function.identity())
+                                    .map(booking -> booking.roomNo())
+                                    .collectList()
+                                    .block();
+
+                            log.info("{} are checkout.", bookings);
+                        }
                         break;
                 }
             }
