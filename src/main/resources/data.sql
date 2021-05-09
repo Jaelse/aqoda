@@ -1,0 +1,2 @@
+INSERT INTO HOTEL (NAME) VALUES
+('Paeng hotel');
