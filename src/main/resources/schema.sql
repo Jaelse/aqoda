@@ -13,14 +13,14 @@ CREATE TABLE ROOM
 
 CREATE TABLE KEYCHAIN
 (
-    keychain_no LONG PRIMARY KEY,
-    hotel_id    LONG,
-    foreign key (hotel_id) references HOTEL (id)
+    keychain_no UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+    room_no    LONG,
+    foreign key (room_no) references ROOM (room_no)
 );
 
 CREATE TABLE GUEST
 (
-    id          LONG PRIMARY KEY,
+    id          UUID PRIMARY KEY,
     name        VARCHAR(255),
     age         INT,
     room_no     Long,
