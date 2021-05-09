@@ -14,17 +14,23 @@ CREATE TABLE ROOM
 CREATE TABLE KEYCHAIN
 (
     keychain_no UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
-    room_no    LONG,
+    room_no     LONG,
+    guest_id    UUID,
     foreign key (room_no) references ROOM (room_no)
 );
 
 CREATE TABLE GUEST
 (
-    id          UUID PRIMARY KEY,
+    id          UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     name        VARCHAR(255),
     age         INT,
     room_no     Long,
-    keychain_no LONG,
+    keychain_no UUID,
+    check (age > 1 and age < 150),
     foreign key (room_no) references ROOM (room_no),
     foreign key (keychain_no) references KEYCHAIN (keychain_no)
 );
+
+ALTER TABLE KEYCHAIN
+    ADD FOREIGN KEY (guest_id)
+        REFERENCES GUEST (id);

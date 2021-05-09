@@ -1,4 +1,4 @@
-package com.example.aqoda.resource.keychain.entities;
+package com.example.aqoda.resource.keycard.entities;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @Getter
 @Builder
 @Table("keychain")
-public class KeychainEntity implements Persistable<UUID> {
+public class KeycardEntity implements Persistable<UUID> {
 
     @Id
     @Column("keychain_no")
@@ -22,6 +22,9 @@ public class KeychainEntity implements Persistable<UUID> {
     @NonNull
     @Column("room_no")
     private final Long roomNo;
+
+    @Column("guest_id")
+    private final UUID guestId;
 
     @Override
     public UUID getId() {

@@ -1,12 +1,12 @@
 package com.example.aqoda;
 
-import com.example.aqoda.resource.hotel.entities.HotelEntity;
-import com.example.aqoda.resource.keychain.entities.KeychainEntity;
+import com.example.aqoda.resource.guest.entities.GuestEntity;
+import com.example.aqoda.resource.keycard.entities.KeycardEntity;
 import com.example.aqoda.resource.room.entities.RoomEntity;
+import com.example.aqoda.service.guest.GuestService;
 import com.example.aqoda.service.hotel.HotelService;
-import com.example.aqoda.service.keychain.KeychainService;
+import com.example.aqoda.service.keycard.KeycardService;
 import com.example.aqoda.service.room.RoomService;
-import io.r2dbc.spi.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,11 @@ public class AqodaApplication {
     private RoomService roomService;
 
     @Autowired
-    private KeychainService keychainService;
+    private KeycardService keychainService;
+
+    @Autowired
+    private GuestService guestService;
+
 
     @Bean
     public CommandLineRunner demo() {
@@ -53,15 +57,26 @@ public class AqodaApplication {
                         return Mono.just(room);
                     }).block();
 
-            keychainService.create(KeychainEntity.builder()
+            var keychain = keychainService.create(KeycardEntity.builder()
                     .roomNo(201L)
                     .build())
-                    .flatMap(keychain -> {
-                        System.out.println(keychain.keychainNo());
-                        System.out.println(keychain.roomNo());
-                        return Mono.just(keychain);
+                    .flatMap(newKeychain -> {
+                        System.out.println(newKeychain.keychainNo());
+                        System.out.println(newKeychain.roomNo());
+                        return Mono.just(newKeychain);
                     })
                     .block();
+
+            guestService.create(GuestEntity.builder()
+                    .name("Thor")
+                    .roomNo(201L)
+                    .keychainNo(keychain.keychainNo())
+                    .age(24)
+                    .build())
+                    .flatMap(guest -> {
+                        System.out.println(guest.name());
+                        return Mono.just(guest);
+                    }).block();
         };
     }
 }
