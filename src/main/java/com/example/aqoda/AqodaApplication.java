@@ -1,8 +1,10 @@
 package com.example.aqoda;
 
 import com.example.aqoda.resource.hotel.entities.HotelEntity;
+import com.example.aqoda.resource.keychain.entities.KeychainEntity;
 import com.example.aqoda.resource.room.entities.RoomEntity;
 import com.example.aqoda.service.hotel.HotelService;
+import com.example.aqoda.service.keychain.KeychainService;
 import com.example.aqoda.service.room.RoomService;
 import io.r2dbc.spi.ConnectionFactory;
 import org.slf4j.Logger;
@@ -29,6 +31,9 @@ public class AqodaApplication {
     @Autowired
     private RoomService roomService;
 
+    @Autowired
+    private KeychainService keychainService;
+
     @Bean
     public CommandLineRunner demo() {
         return (args) -> {
@@ -37,7 +42,7 @@ public class AqodaApplication {
                     .roomNo(201L)
                     .hotelId(hotel.id())
                     .build())
-            .block();
+                    .block();
 
 
             roomService.findByRoomNo(201L)
@@ -47,7 +52,16 @@ public class AqodaApplication {
                         System.out.println("-----------------------");
                         return Mono.just(room);
                     }).block();
-        };
 
+            keychainService.create(KeychainEntity.builder()
+                    .roomNo(201L)
+                    .build())
+                    .flatMap(keychain -> {
+                        System.out.println(keychain.keychainNo());
+                        System.out.println(keychain.roomNo());
+                        return Mono.just(keychain);
+                    })
+                    .block();
+        };
     }
 }
