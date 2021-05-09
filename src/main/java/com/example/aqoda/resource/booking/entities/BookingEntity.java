@@ -1,7 +1,6 @@
-package com.example.aqoda.resource.guest.entities;
+package com.example.aqoda.resource.booking.entities;
 
 import lombok.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -9,20 +8,21 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.util.UUID;
 
 @Data
-@Setter
 @Getter
+@Setter
 @Builder
-@Table("guest")
-public class GuestEntity {
+@Table("booking")
+public class BookingEntity {
 
     @Id
-    private UUID id;
+    @Column("booking_id")
+    private final UUID bookingId;
 
     @NonNull
-    @Column("name")
-    private String name;
+    @Column("room_no")
+    private final Long roomNo;
 
     @NonNull
-    @Column("age")
-    private Integer age;
+    @Column("guest_id")
+    private final UUID guestId;
 }

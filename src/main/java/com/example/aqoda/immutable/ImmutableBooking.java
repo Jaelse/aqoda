@@ -9,9 +9,9 @@ import java.util.UUID;
 @Builder
 @Getter
 @Accessors(fluent = true)
-public class ImmutableKeycard {
+public class ImmutableBooking {
 
-    private final Long keycardNo;
+    private final UUID bookingId;
     private final Long roomNo;
     private final UUID guestId;
 }

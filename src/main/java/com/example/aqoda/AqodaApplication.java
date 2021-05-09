@@ -1,14 +1,17 @@
 package com.example.aqoda;
 
 import com.example.aqoda.enums.Instruction;
-import com.example.aqoda.immutable.ImmutableKeycard;
+import com.example.aqoda.immutable.ImmutableBooking;
+import com.example.aqoda.resource.booking.entities.BookingEntity;
 import com.example.aqoda.resource.guest.entities.GuestEntity;
 import com.example.aqoda.resource.keycard.entities.KeycardEntity;
 import com.example.aqoda.resource.room.entities.RoomEntity;
+import com.example.aqoda.service.booking.BookingService;
 import com.example.aqoda.service.guest.GuestService;
 import com.example.aqoda.service.hotel.HotelService;
 import com.example.aqoda.service.keycard.KeycardService;
 import com.example.aqoda.service.room.RoomService;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +25,8 @@ import reactor.core.publisher.Mono;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 public class AqodaApplication {
@@ -44,6 +49,8 @@ public class AqodaApplication {
     @Autowired
     private GuestService guestService;
 
+    @Autowired
+    private BookingService bookingService;
 
     @Bean
     public CommandLineRunner demo() {
@@ -72,11 +79,11 @@ public class AqodaApplication {
                                         roomService.create(RoomEntity.builder()
                                                 .roomNo(roomNo)
                                                 .hotelId(hotel.id())
-                                                .keycardNo(keycard.keychainNo())
+                                                .keycardNo(keycard.keycardNo())
                                                 .build())
                                                 .block();
 
-                                        keycardService.update(keycard.keychainNo(), Optional.ofNullable(roomNo), Optional.empty())
+                                        keycardService.update(keycard.keycardNo(), Optional.ofNullable(roomNo), Optional.empty())
                                                 .block();
 
                                     }
@@ -92,43 +99,213 @@ public class AqodaApplication {
                             String name = command.getParams().get(1);
                             Integer age = Integer.valueOf(command.getParams().get(2));
 
-                            var guestCount = (int) guestService.findByRoomNo(roomNo)
-                                    .toStream().count();
+                            bookingService.findByRoomNo(roomNo)
+                                    .flatMap(booking ->
+                                            guestService.findById(booking.guestId())
+                                                    .map(guest -> {
+                                                        log.info("Cannot book room {} for {}, The room is currently booked by {}.", roomNo, name, guest.name());
+                                                        return booking;
+                                                    })
+                                    )
+                                    .switchIfEmpty(keycardService.findByRoomNo(roomNo)
+                                            .map(keycard -> guestService.findByName(name)
+                                                    .map(g -> keycardService.update(keycard.keycardNo(), Optional.empty(), Optional.ofNullable(g.id()))
+                                                            .map(keycard1 -> bookingService.book(BookingEntity.builder()
+                                                                    .guestId(g.id())
+                                                                    .roomNo(roomNo)
+                                                                    .build())
+                                                            ).flatMap(x -> x)
+                                                    )
+                                                    .defaultIfEmpty(guestService.create(GuestEntity.builder()
+                                                            .name(name)
+                                                            .age(age)
+                                                            .build())
+                                                            .flatMap(guest -> keycardService.update(keycard.keycardNo(), Optional.empty(), Optional.ofNullable(guest.id()))
+                                                                    .map(keycard1 -> bookingService.book(BookingEntity.builder()
+                                                                            .guestId(guest.id())
+                                                                            .roomNo(roomNo)
+                                                                            .build())
+                                                                    ).flatMap(x -> x)
+                                                            )
+                                                    )
+                                                    .flatMap(x -> x)
+                                                    .flatMap(x -> {
+                                                        log.info("Room {} is booked by {} with keycard number {}.", x.roomNo(), name, keycard.keycardNo());
+                                                        return Mono.just(x);
+                                                    })
+                                            )
+                                            .flatMap(x -> x)
+                                    ).block();
 
-                            ImmutableKeycard keycard = keycardService.findByRoomNo(roomNo).block();
-
-                            if (guestCount == 0) {
-                                guestService.findByName(name)
-                                        .flatMap(guest -> guestService
-                                                .update(guest.id(), Optional.empty(), Optional.empty(), Optional.ofNullable(roomNo), Optional.ofNullable(keycard.keychainNo()))
-                                                .map(updatedGuest -> keycardService.update(keycard.keychainNo(), Optional.empty(), Optional.ofNullable(updatedGuest.id())))
-                                                .map(ignored -> Mono.just(guest))
-                                        )
-                                        .defaultIfEmpty(guestService.create(GuestEntity.builder()
-                                                .name(name)
-                                                .age(age)
-                                                .roomNo(roomNo)
-                                                .keycardNo(keycard.keychainNo())
-                                                .build())
-                                                .flatMap(guest -> keycardService.update(keycard.keychainNo(), Optional.empty(), Optional.ofNullable(guest.id()))
-                                                        .map(ignored -> guest)
-                                                )
-
-                                        ).block();
-                            }
                         }
                         break;
                     case list_available_rooms:
+                        roomService.findAll()
+                                .filter(room -> bookingService.findByRoomNo(room.roomNo())
+                                        .map(guest -> false)
+                                        .switchIfEmpty(Mono.just(true))
+                                        .block()
+                                )
+                                .subscribe(room -> log.info("{}", room.roomNo()));
+                        break;
                     case checkout:
+                        if (command.getParams().size() == 2) {
+                            Long keycardNo = Long.valueOf(command.getParams().get(0));
+                            String guestName = command.getParams().get(1);
+                            guestService.findByName(guestName)
+                                    .map(guest -> keycardService.findByHolderAndKeycardNo(guest.id(), keycardNo)
+                                            .flatMap(keycard -> {
+                                                        log.info("Room {} is checkout.", keycard.roomNo());
+                                                        return bookingService.checkout(guest.id(), keycard.roomNo());
+                                                    }
+                                            )
+                                            .switchIfEmpty(
+                                                    keycardService.findByNo(keycardNo)
+                                                            .map(keycard -> {
+                                                                        return guestService.findById(keycard.guestId())
+                                                                                .map(Function.identity());
+                                                                    }
+                                                            )
+                                                            .flatMap(Function.identity())
+                                                            .map(g -> {
+                                                                log.info("Only {} can checkout with keycard number {}.", g.name(), keycardNo);
+                                                                return ImmutableBooking.builder().build();
+                                                            })
+                                            )
+                                    )
+                                    .flatMap(Function.identity())
+                                    .block();
+
+                        }
+                        break;
                     case list_guest:
-                    case book_by_floor:
+                        List<String> names = bookingService.findAll()
+                                .flatMap(booking -> guestService.findById(booking.guestId()))
+                                .collect(Collectors.toList())
+                                .map(immutableGuests -> immutableGuests.stream()
+                                        .map(guest -> guest.name())
+                                        .collect(Collectors.toList())
+                                )
+                                .block();
+
+                        log.info("{}", names);
+                        break;
                     case get_guest_in_room:
+                        if (command.getParams().size() == 1) {
+                            Long roomNo = Long.valueOf(command.getParams().get(0));
+                            String name = bookingService.findByRoomNo(roomNo)
+                                    .map(booking -> guestService.findById(booking.guestId()))
+                                    .map(Function.identity())
+                                    .flatMap(x -> x)
+                                    .block()
+                                    .name();
+
+                            log.info("{}", name);
+                        }
                     case list_guest_by_age:
+                        if (command.getParams().size() == 2) {
+                            String operator = command.getParams().get(0);
+                            Integer age = Integer.valueOf(command.getParams().get(1));
+
+                            if (operator == ">") {
+                                List<String> n = guestService.guestsGreaterThanAge(age)
+                                        .map(guest -> guest.name())
+                                        .collectList()
+                                        .block();
+
+                                log.info("{}", n);
+                            } else if (operator == "<") {
+                                List<String> n = guestService.guestsLessThanAge(age)
+                                        .map(guest -> guest.name())
+                                        .collectList()
+                                        .block();
+
+                                log.info("{}", n);
+                            }
+                        }
+                        break;
                     case list_guest_by_floor:
+                        if (command.getParams().size() == 1) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            List<String> n = bookingService.findAll()
+                                    .filter(booking -> booking.roomNo() / 100 == floor)
+                                    .map(booking -> guestService.findById(booking.guestId())
+                                    )
+                                    .flatMap(Function.identity())
+                                    .map(immutableGuest -> immutableGuest.name())
+                                    .collectList()
+                                    .block();
+
+                            log.info("{}", n);
+                        }
+                        break;
+                    case book_by_floor:
+                        if (command.getParams().size() == 3) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            String name = command.getParams().get(1);
+                            Integer age = Integer.valueOf(command.getParams().get(2));
+
+                            Boolean canBook = true;
+
+                            List<ImmutableBooking> bookings = roomService.findAll()
+                                    .filter(room -> room.roomNo() / 100 == floor)
+                                    .filter(room -> bookingService.findByRoomNo(room.roomNo()).map(r -> false).switchIfEmpty(Mono.just(true)).block())
+                                    .map(room -> guestService.findByName(name)
+                                            .flatMap(guest -> bookingService.book(BookingEntity.builder()
+                                                            .roomNo(room.roomNo())
+                                                            .guestId(guest.id())
+                                                            .build()
+                                                    )
+                                            )
+                                            .switchIfEmpty(guestService.create(GuestEntity.builder()
+                                                    .name(name)
+                                                    .age(age)
+                                                    .build())
+                                                    .flatMap(immutableGuest -> bookingService.book(BookingEntity.builder()
+                                                            .roomNo(room.roomNo())
+                                                            .guestId(immutableGuest.id())
+                                                            .build())
+                                                    )
+                                            )
+                                    )
+                                    .map(Mono::block)
+                                    .collectList()
+                                    .map(ArrayList::new)
+                                    .block();
+
+                            List<Long> rooms = bookings.stream()
+                                    .map(booking -> booking.roomNo())
+                                    .collect(Collectors.toList());
+
+                            List<Long> keycards = bookings.stream()
+                                    .map(booking -> keycardService.findByRoomNo(booking.roomNo()))
+                                    .map(immutableKeycardMono -> immutableKeycardMono.block())
+                                    .map(keycard -> keycard.keycardNo())
+                                    .collect(Collectors.toList());
+
+
+                            log.info("{} are booked with keycard number {}.", rooms, keycards);
+                        }
+                        break;
                     case checkout_guest_by_floor:
+                        if (command.getParams().size() == 1) {
+                            Integer floor = Integer.valueOf(command.getParams().get(0));
+                            List<Long> bookings = bookingService.findAll()
+                                    .filter(booking -> booking.roomNo() / 100 == floor)
+                                    .map(booking -> bookingService.checkout(booking.guestId(), booking.roomNo()))
+                                    .flatMap(Function.identity())
+                                    .map(booking -> booking.roomNo())
+                                    .collectList()
+                                    .block();
+
+                            log.info("{} are checkout.", bookings);
+                        }
+                        break;
                 }
             }
-        };
+        }
+
+                ;
     }
 
     private List<Command> getCommandsFromFileName(String filename) throws FileNotFoundException {

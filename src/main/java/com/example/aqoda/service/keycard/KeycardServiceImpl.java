@@ -23,29 +23,40 @@ public class KeycardServiceImpl implements KeycardService {
 
 
     @Override
-    public Mono<ImmutableKeycard> create(KeycardEntity keychain) {
-        return keychainRepository.save(keychain)
-                .map(newKeychain -> ImmutableKeycard.builder()
-                        .keychainNo(newKeychain.getKeycardNo())
-                        .roomNo(newKeychain.getRoomNo())
-                        .guestId(newKeychain.getGuestId())
+    public Mono<ImmutableKeycard> findByNo(Long keycardNo) {
+        return keychainRepository.findById(keycardNo)
+                .map(keycard -> ImmutableKeycard.builder()
+                        .keycardNo(keycard.getKeycardNo())
+                        .roomNo(keycard.getRoomNo())
+                        .guestId(keycard.getHolder())
                         .build()
                 );
     }
 
     @Override
-    public Mono<ImmutableKeycard> update(UUID keycardNo, Optional<Long> maybeRoomNo, Optional<UUID> maybeGuestId) {
+    public Mono<ImmutableKeycard> create(KeycardEntity keychain) {
+        return keychainRepository.save(keychain)
+                .map(newKeychain -> ImmutableKeycard.builder()
+                        .keycardNo(newKeychain.getKeycardNo())
+                        .roomNo(newKeychain.getRoomNo())
+                        .guestId(newKeychain.getHolder())
+                        .build()
+                );
+    }
+
+    @Override
+    public Mono<ImmutableKeycard> update(Long keycardNo, Optional<Long> maybeRoomNo, Optional<UUID> maybeGuestId) {
         return keychainRepository.findById(keycardNo)
                 .flatMap(keycard -> {
                     maybeRoomNo.ifPresent(keycard::setRoomNo);
-                    maybeGuestId.ifPresent(keycard::setGuestId);
+                    maybeGuestId.ifPresent(keycard::setHolder);
                     return Mono.just(keycard);
                 })
                 .flatMap(keychainRepository::save)
                 .map(updatedKeycard -> ImmutableKeycard.builder()
-                        .keychainNo(updatedKeycard.getKeycardNo())
+                        .keycardNo(updatedKeycard.getKeycardNo())
                         .roomNo(updatedKeycard.getRoomNo())
-                        .guestId(updatedKeycard.getGuestId())
+                        .guestId(updatedKeycard.getHolder())
                         .build()
                 );
     }
@@ -54,12 +65,23 @@ public class KeycardServiceImpl implements KeycardService {
     public Mono<ImmutableKeycard> findByRoomNo(Long roomNo) {
         return keychainRepository.findKeycardEntityByRoomNo(roomNo)
                 .map(keycard -> ImmutableKeycard.builder()
-                        .keychainNo(keycard.getKeycardNo())
+                        .keycardNo(keycard.getKeycardNo())
                         .roomNo(keycard.getRoomNo())
-                        .guestId(keycard.getGuestId())
+                        .guestId(keycard.getHolder())
                         .build()
                 );
 
 
+    }
+
+    @Override
+    public Mono<ImmutableKeycard> findByHolderAndKeycardNo(UUID holderId, Long keycardNo) {
+        return keychainRepository.findKeycardEntityByHolderAndKeycardNo(holderId, keycardNo)
+                .map(keycard -> ImmutableKeycard.builder()
+                        .keycardNo(keycard.getKeycardNo())
+                        .roomNo(keycard.getRoomNo())
+                        .guestId(keycard.getHolder())
+                        .build()
+                );
     }
 }
