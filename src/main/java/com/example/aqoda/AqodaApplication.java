@@ -1,6 +1,9 @@
 package com.example.aqoda;
 
+import com.example.aqoda.resource.hotel.entities.HotelEntity;
+import com.example.aqoda.resource.room.entities.RoomEntity;
 import com.example.aqoda.service.hotel.HotelService;
+import com.example.aqoda.service.room.RoomService;
 import io.r2dbc.spi.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,28 +26,28 @@ public class AqodaApplication {
     @Autowired
     private HotelService hotelService;
 
+    @Autowired
+    private RoomService roomService;
 
     @Bean
     public CommandLineRunner demo() {
         return (args) -> {
-            hotelService.create("Paeng's hotel")
-                    .flatMap(hotel -> {
-                        System.out.println("--------");
-                        System.out.println(hotel.id());
-                        System.out.println(hotel.name());
-                        System.out.println("--------");
-                        return Mono.just(hotel);
-                    }).block();
+            var hotel = hotelService.create("Paeng's hotel").block();
+            roomService.create(RoomEntity.builder()
+                    .roomNo(201L)
+                    .hotelId(hotel.id())
+                    .build())
+            .block();
 
-            hotelService.findById(1L)
-                    .flatMap(hotel -> {
-                        System.out.println("--------");
-                        System.out.println(hotel.id());
-                        System.out.println(hotel.name());
-                        System.out.println("--------");
-                        return Mono.just(hotel);
+
+            roomService.findByRoomNo(201L)
+                    .flatMap(room -> {
+                        System.out.println("-----------------------");
+                        System.out.println(room.roomNo());
+                        System.out.println("-----------------------");
+                        return Mono.just(room);
                     }).block();
         };
-    }
 
+    }
 }

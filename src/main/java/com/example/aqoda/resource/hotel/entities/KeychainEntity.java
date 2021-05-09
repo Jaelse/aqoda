@@ -10,5 +10,5 @@ import lombok.Setter;
 public class KeychainEntity {
 
     private final Long keychainNo;
-    private final GuestEntity keychainHolder;
+    private final Long roomNo;
 }

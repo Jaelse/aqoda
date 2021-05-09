@@ -1,4 +1,4 @@
-package com.example.aqoda.resource.hotel.entities;
+package com.example.aqoda.resource.guest.entities;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -21,5 +21,9 @@ public class GuestEntity {
 
     @NonNull
     private Integer age;
+
+    private Long roomNo;
+
+    private Long keychainNo;
 
 }

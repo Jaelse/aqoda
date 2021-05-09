@@ -1,8 +1,7 @@
-package com.example.aqoda.resource.hotel.repository;
+package com.example.aqoda.resource.guest.repository;
 
-import com.example.aqoda.resource.hotel.entities.GuestEntity;
+import com.example.aqoda.resource.guest.entities.GuestEntity;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Flux;
 
 public interface GuestRepository extends ReactiveCrudRepository<GuestEntity, Long> {
 
