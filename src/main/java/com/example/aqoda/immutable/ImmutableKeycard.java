@@ -9,8 +9,9 @@ import java.util.UUID;
 @Builder
 @Getter
 @Accessors(fluent = true)
-public class ImmutableKeychain {
+public class ImmutableKeycard {
 
     private final UUID keychainNo;
     private final Long roomNo;
+    private final UUID guestId;
 }

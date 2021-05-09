@@ -4,25 +4,19 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 
+import java.util.UUID;
+
 @Builder
+@Getter
+@Accessors(fluent = true)
 public class ImmutableGuest {
 
-    private final Long id;
+    private final UUID id;
     private final String name;
     private final Integer age;
-
-    public Long id() {
-        return id;
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public Integer age() {
-        return age;
-    }
-
+    private final Long roomNo;
+    private final UUID keychainNo;
 }
