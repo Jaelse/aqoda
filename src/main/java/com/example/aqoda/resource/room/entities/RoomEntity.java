@@ -28,7 +28,10 @@ public class RoomEntity implements Persistable<Long> {
 
     @NonNull
     @Column("keycard_no")
-    private UUID keycardNo;
+    private Long keycardNo;
+
+    @Column("booking_no")
+    private UUID bookingNo;
 
     @Override
     public Long getId() {

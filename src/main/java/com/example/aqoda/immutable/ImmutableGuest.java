@@ -17,6 +17,4 @@ public class ImmutableGuest {
     private final UUID id;
     private final String name;
     private final Integer age;
-    private final Long roomNo;
-    private final UUID keychainNo;
 }

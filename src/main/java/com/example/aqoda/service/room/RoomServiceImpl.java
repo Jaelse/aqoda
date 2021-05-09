@@ -5,6 +5,7 @@ import com.example.aqoda.resource.room.entities.RoomEntity;
 import com.example.aqoda.resource.room.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -22,7 +23,7 @@ public class RoomServiceImpl implements RoomService {
                 .map(newRoom -> ImmutableRoom
                         .builder()
                         .roomNo(newRoom.getRoomNo())
-//                        .hotelId(newRoom.getHotelId())
+                        .hotelId(newRoom.getHotelId())
                         .build());
     }
 
@@ -32,7 +33,18 @@ public class RoomServiceImpl implements RoomService {
                 .map(room -> ImmutableRoom
                         .builder()
                         .roomNo(room.getRoomNo())
-//                        .hotelId(room.getHotelId())
+                        .hotelId(room.getHotelId())
                         .build());
+    }
+
+    @Override
+    public Flux<ImmutableRoom> findAll() {
+        return roomRepository.findAll()
+                .map(room -> ImmutableRoom
+                                .builder()
+                                .roomNo(room.getRoomNo())
+                        .hotelId(room.getHotelId())
+                                .build()
+                );
     }
 }

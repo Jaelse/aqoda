@@ -16,5 +16,5 @@ public interface GuestRepository extends ReactiveCrudRepository<GuestEntity, UUI
 
     Flux<GuestEntity> findGuestEntityByAgeAfter(Integer age);
 
-    Flux<GuestEntity> findGuestEntityByRoomNo(Long roomNo);
+    Flux<GuestEntity> findGuestEntityByAgeBefore(Integer age);
 }

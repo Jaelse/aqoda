@@ -13,20 +13,20 @@ import java.util.UUID;
 @Setter
 @Builder
 @Table("keycard")
-public class KeycardEntity implements Persistable<UUID> {
+public class KeycardEntity implements Persistable<Long> {
 
     @Id
     @Column("keycard_no")
-    private final UUID keycardNo;
+    private final Long keycardNo;
 
     @Column("room_no")
     private Long roomNo;
 
-    @Column("guest_id")
-    private UUID guestId;
+    @Column("holder")
+    private UUID holder;
 
     @Override
-    public UUID getId() {
+    public Long getId() {
         return keycardNo;
     }
 
