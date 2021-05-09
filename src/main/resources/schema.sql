@@ -8,12 +8,13 @@ CREATE TABLE ROOM
 (
     room_no  LONG PRIMARY KEY,
     hotel_id LONG NOT NULL,
+    keycard_no UUID,
     foreign key (hotel_id) references HOTEL (id)
 );
 
-CREATE TABLE KEYCHAIN
+CREATE TABLE KEYCARD
 (
-    keychain_no UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+    keycard_no UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     room_no     LONG,
     guest_id    UUID,
     foreign key (room_no) references ROOM (room_no)
@@ -25,12 +26,16 @@ CREATE TABLE GUEST
     name        VARCHAR(255),
     age         INT,
     room_no     Long,
-    keychain_no UUID,
+    keycard_no UUID,
     check (age > 1 and age < 150),
     foreign key (room_no) references ROOM (room_no),
-    foreign key (keychain_no) references KEYCHAIN (keychain_no)
+    foreign key (keycard_no) references KEYCARD (keycard_no)
 );
 
-ALTER TABLE KEYCHAIN
+ALTER TABLE ROOM
+    ADD FOREIGN KEY (keycard_no)
+        REFERENCES KEYCARD (keycard_no);
+
+ALTER TABLE KEYCARD
     ADD FOREIGN KEY (guest_id)
         REFERENCES GUEST (id);

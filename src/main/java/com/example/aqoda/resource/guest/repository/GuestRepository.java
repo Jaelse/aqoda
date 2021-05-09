@@ -1,13 +1,20 @@
 package com.example.aqoda.resource.guest.repository;
 
 import com.example.aqoda.resource.guest.entities.GuestEntity;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-public interface GuestRepository extends ReactiveCrudRepository<GuestEntity, Long> {
+import java.util.UUID;
 
-//    Flux<GuestEntity> listAllGuests(Long hotelId);
+@Repository
+public interface GuestRepository extends ReactiveCrudRepository<GuestEntity, UUID> {
 
-//    Flux<GuestEntity> listGuestsByAgeRage(Long hotelId, Integer lowerLimit, Integer upperLimit);
+    Mono<GuestEntity> findGuestEntityByName(String name);
 
-//    Flux<GuestEntity> listGuestsByRoom(Long hotelId, Long roomNo);
+    Flux<GuestEntity> findGuestEntityByAgeAfter(Integer age);
+
+    Flux<GuestEntity> findGuestEntityByRoomNo(Long roomNo);
 }
